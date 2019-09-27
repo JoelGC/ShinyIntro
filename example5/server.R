@@ -33,7 +33,7 @@ shinyServer(function(input, output) {
       layout(xaxis=list(title="# of Successes"), 
              yaxis=list(title="Probability"))
   }  
-  output$stats <- renderTable({ propTest() }, align=rep("c", 8), include.rownames=FALSE)
+  output$stats <- renderTable({ propTest() }, include.rownames=FALSE)
   output$graph <- renderPlotly({ graphBinom(input$s1, input$t1) })
   output$downloadResults <- downloadHandler(
     filename = "output.csv",

@@ -22,7 +22,7 @@ shinyServer(function(input, output) {
 	  names(out) <- c("Success Proportion", "Failure Proportion", "p", "Success Proportion Lower CL", "Success Proportion Upper CL", "Alternative Hypothesis", "Confidence Level")
 	  return(out)
   }
-  output$stats <- renderTable({ propTest() }, align=rep("c", 8), include.rownames=FALSE)
+  output$stats <- renderTable({ propTest() }, include.rownames=FALSE)
   output$downloadResults <- downloadHandler(
     filename = "output.csv",
     content = function(file) {

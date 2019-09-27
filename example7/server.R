@@ -39,7 +39,7 @@ shinyServer(function(input, output, session) {
     xval <- barplot(indiv, col=cols, xlab="# of Successes", ylab="Probability")
     axis(1, xval, labels=1:totaln)
   }  
-  output$stats <- renderTable({ propTest() }, align=rep("c", 8), include.rownames=FALSE)
+  output$stats <- renderTable({ propTest() }, include.rownames=FALSE)
   output$graph <- renderPlot({ graphBinom(input$s1, input$t1) })
   output$downloadResults <- downloadHandler(
     filename = "output.csv",
