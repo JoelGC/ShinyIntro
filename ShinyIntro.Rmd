@@ -1,0 +1,362 @@
+---
+title: An Introduction to Shiny
+author: Joel Chaney
+date: Cin-Day RUG / 25SEP2019
+framework: html5slides
+output:
+  ioslides_presentation:
+    widescreen: true
+    smaller: true
+---
+
+## What is Shiny and How Can It Help Me?
+- Shiny is an R package developed, maintained and supported by RStudio 
+    - <http://www.rstudio.com/shiny/>
+        - General information
+        - Tutorials
+        - Server implementation options
+- Shiny allows you to create interactive statistical web tools ***easily*** and with great ***flexibility*** and ***power***
+    - Incorporate analyses and graphs from one or more of nearly 15,000 R packages now available
+    - Create interactive graphics and tables using only R code - no additional scripting necessary!
+        - **ui.R**:  An R script to create the user interface
+        - **server.R**:  An R script to conduct analyses and create graphs and/or tables for display
+        - **app.R**:  A single R script used instead of ui.R and server.R
+
+## How Do I Obtain "Shiny"?
+- Shiny is available on CRAN (the Comprehensive R Archive Network), so simply do one of the following:
+    - In RStudio, click on "Tools" > "Install Packages...", type "shiny" under "Packages" and click the "Install" button
+    - Click on "Packages" > "Install Packages..." in the R command window, select a CRAN mirror and then select "shiny"
+    - Type "install.packages('shiny')" in the R command window
+
+## How Do I Start Using "Shiny"?
+- Go through the video and/or written tutorials at <http://shiny.rstudio.com/tutorial/> 
+- Set up the tool:
+    - manually via the R command window or GUI, or
+    - via RStudio
+    
+## How Do I Start Using "Shiny" (with RStudio)?
+- Create a new Shiny app:
+    - Select "File" > "New Project..." > "New Directory" > "Shiny Web Application"
+    - Enter a new folder name under "Directory name:"
+    - Browse to a location to place the folder
+    - Click "Create Project"
+- ui.R and server.R files are created in the new folder
+- Click the "Run App" button at the top of the script window to run the example tool created
+- Modify and save the ui.R and server.R scripts to create a new tool
+
+## How Do I Start Using "Shiny" (without RStudio)?
+- Select "Packages" > "Load Package." > "shiny", or type "library(shiny)", in the R command window after the package has been installed
+- Place an "app.R" file, or both a "ui.R" file and a "server.R" file, in your working directory 
+    - Type "getwd()" to see what your working directory is
+    - Type "setwd('\<location\>')" to change your working directory to <location> (e.g., 'U:/Data/MyShinyApps')
+- Type "runApp()" on the command line - the tool will start in your default web browser
+
+## User Interface R File (ui.R)
+- Use the shinyUI() function, followed by the fluidPage() function
+- Within fluidPage():
+    - titlePanel()
+    - sidebarLayout()
+        - sidebarPanel()
+        - mainPanel()
+- HTML builder functions:
+    - HTML(), p(), br(), h1(), ..., h6(), a(), ...
+- Input control/widget functions:
+    - numericInput(), sliderInput(), fileInput(), ...
+- Output functions:
+    - downloadButton(), plotOutput(), tableOutput(), dataTableOutput(), ...
+
+## Server R File (server.R)
+- Include the analysis/graph code in the shinyServer() function
+- Within shinyServer():
+    - reactive():  used to automatically update object values
+    - renderPlot():  display a reactive plot
+    - renderImage():  display an image
+    - renderTable():  display a data table
+    - renderDataTable():  display an interactive data table
+    - downloadHandler():  make file download available
+
+## Example 1: Getting Our Feet Wet with Geyser Data
+- Begin with the RStudio starting app
+- Modify the slider so that values from 5 to 25 can be selected for the # of bins
+- Change the starting # of bins value to 15
+- Make the width of the sidebar panel to 3 units rather than the default of 4 units
+- Change the bar color to your favorite color
+
+## Example 1: ui.R
+```{r, echo=TRUE, eval=FALSE}
+library(shiny)
+shinyUI(fluidPage(
+  # Application title
+  titlePanel("Old Faithful Geyser Data"),
+  # Sidebar with a slider input for number of bins
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput("bins",
+                  "Number of bins:",
+                  min = 5,
+                  max = 25,
+                  value = 15), 
+      width = 3
+    ),
+    # Show a plot of the generated distribution
+    mainPanel(
+      plotOutput("distPlot"),
+      width = 9
+    )
+  )
+))
+```  
+
+## Example 1: server.R
+```{r, echo=TRUE, eval=FALSE}
+library(shiny)
+shinyServer(function(input, output) {
+  output$distPlot <- renderPlot({
+    # generate bins based on input$bins from ui.R
+    x    <- faithful[, 2]
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    # draw the histogram with the specified number of bins
+    hist(x, breaks = bins, col = 'blueviolet', border = 'white')
+  })
+})
+```  
+
+## Example 2: Exact Binomial Test
+- Numeric and radio button input in addition to slider input
+- Renders a table and a static image
+- Includes a download button (to get analysis results in a .csv file)
+- Includes a reactive() function 
+
+## Example 2: ui.R
+```{r, echo=TRUE, eval=FALSE}
+library(shiny)
+shinyUI(fluidPage(
+  titlePanel("Test for One Proportion (Exact Binomial Test)"),
+  sidebarLayout(
+    # Sidebar with controls to select the # of successes, sample size, confidence level and alternative hypothesis
+    sidebarPanel(
+      p("Enter the number of \"successes\" and the total sample size for a single group below, and enter the desired confidence level and alternative hypothesis 
+        (i.e., statement you would like to make).  The table to the right will be automatically updated with the statistical test results.  This table can be downloaded
+        in .csv format by clicking on the \"Download the Results\" button."),
+      fluidRow(
+        column(6, numericInput("s1", "# of Successes:", 12)),
+        column(6, numericInput("t1", "Total Sample Size:", 30))
+      ),
+      sliderInput("confid", "Confidence Level (%):", 50, 99, 95, 1), 
+      radioButtons("testType", "Alternative Hypothesis:", c("proportion of successes is not equal to 0.5"="two.sided", "proportion of successes is less than 0.5"="less", 
+        "proportion of successes is greater than 0.5"="greater"))
+    ),
+    # Show the results table and download button
+    mainPanel(
+      h3(textOutput("Exact Binomial Test")),
+      tableOutput("stats"),
+      downloadButton('downloadResults', 'Download the Results')
+    )
+  )
+))
+```  
+
+## Example 2: server.R
+```{r, echo=TRUE, eval=FALSE}
+library(shiny)
+shinyServer(function(input, output) {
+  altHypothesisLabel <- reactive({ ifelse(input$testType=="two.sided", "Not Equal", ifelse(input$testType=="less", "Less Than", "Greater Than")) })
+  propTest <- function() {
+    results <- binom.test(input$s1, input$t1, conf.level=input$confid/100, alternative=input$testType)
+    s1 <- sprintf("%1.0f", input$s1)
+    t1 <- sprintf("%1.0f", input$t1)
+    s2 <- sprintf("%1.0f", input$t1 - input$s1)
+    prop1 <- sprintf("%1.3f", input$s1/input$t1)
+    prop2 <- sprintf("%1.3f", (input$t1 - input$s1)/input$t1)
+    propdiff <- sprintf("%1.3f", input$s1/input$t1 - (input$t1 - input$s1)/input$t1)
+    pvalue <- sprintf("%1.4f", results$p.value)
+    c1 <- sprintf("%1.3f", results$conf.int[1])
+    c2 <- sprintf("%1.3f", results$conf.int[2])
+    clevel <- paste0(sprintf("%1.0f", input$confid), "%")
+    out <- data.frame(paste0(prop1, "  (", s1, "/", t1, ")"), paste0(prop2, "  (", s2, "/", t1, ")"), pvalue, c1, c2, altHypothesisLabel(), clevel)
+    names(out) <- c("Success Proportion", "Failure Proportion", "p", "Success Proportion Lower CL", "Success Proportion Upper CL", "Alternative Hypothesis", "Confidence Level")
+    return(out)
+  }
+  output$stats <- renderTable({ propTest() }, align=rep("c", 8), include.rownames=FALSE)
+  output$downloadResults <- downloadHandler(
+    filename = "output.csv",
+    content = function(file) {
+      write.csv(propTest(), file, row.names=FALSE)
+    }
+  )
+})
+```  
+
+## Example 3: Exact Binomial Test with a Graph
+- Let's add a graph to the exact binomial test app
+- Graph shows:
+    - the binomial distribution for a given total sample size
+    - highlighted bar representing the # of successes
+- In ui.R, use "plotOutput()" (analogous to tableOutput())
+- In server.R, use "renderPlot()" (analogous to renderTable())
+- Use a function we create called graphBinom()
+
+## Example 3: Code added to mainPanel in ui.R
+```{r, echo=TRUE, eval=FALSE}
+		mainPanel(
+			h3(textOutput("Exact Binomial Test")),
+			tableOutput("stats"),
+			br(),
+			plotOutput("graph"),
+			downloadButton('downloadResults', 'Download the Results')
+		)
+```  
+
+## Example 3: Code added to server.R
+```{r, echo=TRUE, eval=FALSE}
+  graphBinom <- function(x, totaln) {
+    pbin <- pbinom(1:totaln, size=totaln, prob=0.5)
+    prev <- c(0, pbin[-length(pbin)])
+    indiv <- pbin-prev
+    cols <- rep("blue", totaln)
+    cols[x] <- "red"
+    xval <- barplot(indiv, col=cols, xlab="# of Successes", ylab="Probability")
+    axis(1, xval, labels=1:totaln)
+  }  
+
+  output$graph <- renderPlot({ graphBinom(input$s1, input$t1) })
+```  
+
+## Example 4: Reactive Functions
+- Purpose: Prevent functions from being run repeatedly/unnecessarily
+- Replace 
+```{r, echo=TRUE, eval=FALSE}
+propTest <- function() { ... }
+```  
+with
+```{r, echo=TRUE, eval=FALSE}
+propTest <- reactive({ ... })
+```  
+- In this example, the file download occurs immediately, without the need to re-run propTest()
+- Alternatively:
+```{r, echo=TRUE, eval=FALSE}
+propTest <- function() { ... }
+propTestR <- reactive({ propTest() })
+```  
+then call propTestR() instead of propTest()
+
+## Example 5: Interactive Graphs
+- So far, we've seen interactivity via widgets
+- Graphs that are truly interactive can be created in Shiny by integrating other packages, such as:
+    - Plotly
+    - Bokeh
+    - ggplot2
+- Let's look at a Plotly example
+- Install the "plotly" package:
+    - In RStudio: Packages > Install > plotly, or type
+```{r, echo=TRUE, eval=FALSE}
+install.packages("plotly")
+```  
+in the console window
+
+## Example 5: Interactive Graphs
+Replace the bar chart with an interactive Plotly bar chart
+In ui.R, replace 
+```{r, echo=TRUE, eval=FALSE}
+			plotOutput("graph"),
+```  
+with
+```{r, echo=TRUE, eval=FALSE}
+			plotlyOutput("graph"),
+```  
+In server.R, replace 
+```{r, echo=TRUE, eval=FALSE}
+  output$graph <- renderPlot({ graphBinom(input$s1, input$t1) })
+```  
+with
+```{r, echo=TRUE, eval=FALSE}
+  output$graph <- renderPlotly({ graphBinom(input$s1, input$t1) })
+```  
+
+## Example 5: Interactive Graphs
+In the graphBinom() function, replace:
+```{r, echo=TRUE, eval=FALSE}
+    xval <- barplot(indiv, col=cols, xlab="# of Successes", ylab="Probability")
+    axis(1, xval, labels=1:totaln)
+```  
+with 
+```{r, echo=TRUE, eval=FALSE}
+    plot_ly(x=1:totaln, y=indiv, type="bar", marker=list(color=toRGB(cols))) %>% 
+      layout(xaxis=list(title="# of Successes"), 
+             yaxis=list(title="Probability"))
+```  
+
+## Example 6: Uploading Files / Displaying Interactive Data Tables
+- Files can be easily uploaded in Shiny via fileInput() in ui.R
+- Data can be displayed in a static table (as we've already seen) or within interactive data tables
+- Interactive data tables are based on the JavaScript DataTables library (<https://datatables.net/>)
+- dataTableOutput() instead of tableOutput() in ui.R
+- renderDataTable() instead of dataTable() in server.R
+
+## Example 6: Uploading Files / Displaying Interactive Data Tables
+ui.R
+```{r, echo=TRUE, eval=FALSE}
+library(shiny)
+shinyUI(fluidPage(
+  titlePanel("Data Viewer"),
+  sidebarLayout(
+    sidebarPanel(
+      fileInput("file1", "Choose a .csv file", multiple=FALSE, accept=".csv"),
+      tags$hr(),
+      checkboxInput("header", "Check if the first row is a header", TRUE)
+    ),
+    mainPanel(
+      dataTableOutput("contents")
+    )
+  )
+))
+```  
+
+## Example 6: Uploading Files / Displaying Interactive Data Tables
+server.R
+```{r, echo=TRUE, eval=FALSE}
+library(shiny)
+shinyServer(function(input, output) {
+  output$contents <- renderDataTable({
+    inFile <- input$file1
+    if (is.null(inFile))  return(NULL)
+    if (!is.null(inFile)) {
+      indata <- read.csv(inFile$datapath, header=input$header)
+  	  return(indata)
+    }  
+  })
+})
+```  
+
+## Example 7: Displaying Progress Information
+- Progress bars and messages can be displayed in apps
+- Useful to let end-users know that something is happening
+- withProgress() and setProgress() functions
+
+## Example 7: Displaying Progress Information
+server.R
+```{r, echo=TRUE, eval=FALSE}
+shinyServer(function(input, output, session) {
+  altHypothesisLabel <- reactive({ ifelse(input$testType=="two.sided", "Not Equal", ifelse(input$testType=="less", "Less Than", "Greater Than")) })
+  propTest <- function() {
+    # wait for no good reason other than to demonstrate the "reactive" function
+    withProgress(session, min=0, max=100, {
+      setProgress(message="Sleeping for 10 seconds...", detail="Please wait.", value=25)
+      Sys.sleep(10)
+      # now do the analysis
+      setProgress(message="Conducting analysis...", value=80)
+      ...
+  	  setProgress(message="Done.", value=95)
+    })  # end withProgress
+    return(out)
+  }
+```  
+
+## Shiny Tool Deployment
+- "Shiny Server" software can be deployed on Linux servers
+    - open-source version is available on RStudio's website
+    - RStudio licenses "Shiny Server Pro" specifically for Shiny app deployment
+    - RStudio licenses "RStudio Connect" for Shiny app deployment and other R-based content
+- Without Shiny Server:
+    - share the ui.R and server.R files, or app.R, with others who have R and Shiny installed
+    - default web browser and localhost are used
